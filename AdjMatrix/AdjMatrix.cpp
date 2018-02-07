@@ -1,21 +1,5 @@
 #include "AdjMatrix.h"
 
-#define digraph false	//optative. set to false if you don't need a digraph. If it's false, will save almost half of matrix memory (because [1,2] = [2,1])
-
-#if digraph
-	#define _totElem (nodes * nodes)
-	#define _elem( x , y ) \
-		((x) * nodes + (y))
-	//#define _posEquivX( x ) ((x)/4)
-	//#define _posEquivY( x ) ((x) % 4)
-#else
-	#define _totElem ((nodes * (nodes+1))/2)
-	#define _elem( x , y ) \
-		((max((x),(y)) * (max((x),(y)) + 1) / 2) + (min((x),(y))))
-	//#define _posEquivX( x ) (((sqrt((x) * 8 + 1) - 1)/2))
-	//#define _posEquivY( x ) ()
-#endif
-
 class zeroRowsOrCols: public exception
 {
   virtual const char* what() const throw()
@@ -28,9 +12,18 @@ class wrongDimensions: public exception
 {
   virtual const char* what() const throw()
   {
-    return "Error: wrong dimensions in matrix operation.";
+    return "Error: wrong dimensions in _matrix operation.";
   }
 } wrongDim;
+
+
+class outOfBounds: public exception
+{
+  virtual const char* what() const throw()
+  {
+    return "Error: out of bound access.";
+  }
+} wrongBounds;
 
 template<typename T>
 inline string tostr(T value) {
@@ -45,23 +38,23 @@ AdjMatrix::AdjMatrix(int n)
 	if(n < 1)
 		throw zeroCells;
 
-	nodes = n;
+	_nodes = n;
 
- 	matrix = new int[_totElem];
+ 	_matrix = new int[_totElem];
  	for(int i = 0; i < _totElem; i++)
 	{
-		matrix[i] = 0;
+		_matrix[i] = 0;
 	}
 }
 
 AdjMatrix::AdjMatrix(const AdjMatrix& aM) 
 {
-	nodes = aM.nodes;
+	_nodes = aM._nodes;
 
-	matrix = new int[_totElem];
+	_matrix = new int[_totElem];
  	for(int i = 0; i < _totElem; i++)
 	{
-		matrix[i] = aM.matrix[i];
+		_matrix[i] = aM._matrix[i];
 	}
 }
 
@@ -70,45 +63,76 @@ AdjMatrix::AdjMatrix(int n, int k)
 	if(n < 1)
 		throw zeroCells;
 
-	nodes = n;
+	_nodes = n;
 
-	matrix = new int[_totElem];
- 	for(int i = 0; i < _totElem; i++)
+	_matrix = new int[_totElem];
+ 	for(int i = 0; i < _nodes; i++)
 	{
-		matrix[i] = k;
+		for(int j = 0; j < _nodes; j++)
+		{
+			if(i != j)
+				(*this)(i,j) = k;
+		}
 	}
 }
 
 void AdjMatrix::operator=(AdjMatrix aM)
 {
-	if(nodes != aM.nodes)
+	if(_nodes != aM._nodes)
 		throw wrongDim;
 
 	for(int i = 0; i < _totElem; i++)
 	{
-		matrix[i] = aM.matrix[i];
+		_matrix[i] = aM._matrix[i];
+	}
+}
+
+void AdjMatrix::operator=(int aM[]) //for fast asignment. beware, i can't check aM size
+{
+	for(int i = 0; i < _totElem; i++)
+	{
+		_matrix[i] = aM[i];
+	}
+}
+
+void AdjMatrix::operator=(vector<int> aM) 	//for fast asignment.
+{
+	if(aM.size() != (unsigned)_totElem)
+		throw wrongDim;
+
+	for(int i = 0; i < _nodes; i++)
+	{
+		_matrix[i] = aM[i];
 	}
 }
 
 void AdjMatrix::completeGraph()
 {
-	for(int i = 0; i < nodes; i++)
+	for(int i = 0; i < _nodes; i++)
 	{
-		for(int j = 0; j < nodes; j++)
+		for(int j = 0; j < _nodes; j++)
 		{
 			(*this)(i,j) = (i!=j); // every elem is 1 except the diagonal
 		}
 	}
 }
 
+void AdjMatrix::nameElem()
+{
+	for(int i = 0; i < _totElem; i++)
+	{
+		_matrix[i] = i;
+	}
+}
+
 bool AdjMatrix::operator==(AdjMatrix aM)
 {
-	if(nodes != aM.nodes)
+	if(_nodes != aM._nodes)
 		return false;
 
 	for(int i = 0; i < _totElem; i++)
 	{
-		if(matrix[i] != aM.matrix[i])
+		if(_matrix[i] != aM._matrix[i])
 			return false;
 	}
 	return true;
@@ -116,31 +140,27 @@ bool AdjMatrix::operator==(AdjMatrix aM)
 
 int& AdjMatrix::operator() (int x, int y)		//check for improvement
 {
-	if(min(x,y) < 0 || max(x,y) >= nodes)
-	{
-		throw wrongDim;
-	}
+	if(min(x,y) < 0 || max(x,y) >= _nodes)
+		throw wrongBounds;
 	
-	return matrix[_elem(x,y)];
+	return _matrix[_elem(x,y)];
 }
 
 int AdjMatrix::operator() (int x, int y) const	//check for improvement
 {
-	if(min(x,y) < 0 || max(x,y) >= nodes)
-	{
-		throw wrongDim;
-	}
-	
-	return matrix[_elem(x,y)];
+	if(min(x,y) < 0 || max(x,y) >= _nodes)
+		throw wrongBounds;
+		
+	return _matrix[_elem(x,y)];
 }
 
 void AdjMatrix::print() const
 {
 	int maxSize = 1;
 	int elemSize;
-	for(int i = 0; i < nodes; i++)
+	for(int i = 0; i < _nodes; i++)
 	{
-		for(int j = 0; j < nodes; j++)
+		for(int j = 0; j < _nodes; j++)
 		{
 			elemSize = tostr((*this)(i,j)).size();
 			maxSize = max(maxSize, elemSize);
@@ -149,38 +169,38 @@ void AdjMatrix::print() const
 
 	cout << "╭";
 
-	for (int j = 0; j < nodes - 1; j++) {
+	for (int j = 0; j < _nodes - 1; j++) {
 		cout << setw(maxSize) << (*this)(0, j) << ", ";
 	}
 
-	cout << setw(maxSize) << (*this)(0, nodes-1) << "╮" << endl;
+	cout << setw(maxSize) << (*this)(0, _nodes-1) << "╮" << endl;
 
-	for (int i = 1; i < nodes - 1; i++) {
+	for (int i = 1; i < _nodes - 1; i++) {
 		cout << "│";
 
-		for (int j = 0; j < nodes - 1; j++) {
+		for (int j = 0; j < _nodes - 1; j++) {
 			cout << setw(maxSize) << (*this)(i, j) << ", ";
 		}
 
-		cout << setw(maxSize) << (*this)(i, nodes-1) << "│" << endl;
+		cout << setw(maxSize) << (*this)(i, _nodes-1) << "│" << endl;
 	}
 
 	cout << "╰";
 
-	for (int j = 0; j < nodes - 1; j++) {
-		cout << setw(maxSize) << (*this)(nodes-1, j) << ", ";
+	for (int j = 0; j < _nodes - 1; j++) {
+		cout << setw(maxSize) << (*this)(_nodes-1, j) << ", ";
 	}
 
-	cout << setw(maxSize) << (*this)(nodes-1, nodes-1) << "╯" << endl<< endl;
+	cout << setw(maxSize) << (*this)(_nodes-1, _nodes-1) << "╯" << endl<< endl;
 }
 
 int AdjMatrix::indegree(int node)
 {
-	if(node >= nodes)
-		throw wrongDim;
+	if(node < 0 || node >= _nodes)
+		throw wrongBounds;
 
 	int res = 0;
-	for(int i = 0; i <= nodes; i++)
+	for(int i = 0; i <_nodes; i++)
 	{
 		if((*this)(i,node) != 0)
 			res++;
@@ -191,11 +211,11 @@ int AdjMatrix::indegree(int node)
 
 int AdjMatrix::outdegree(int node)
 {
-	if(node >= nodes)
-		throw wrongDim;
+	if(node < 0 || node >= _nodes)
+		throw wrongBounds;
 
 	int res = 0;
-	for(int i = 0; i <= nodes; i++)
+	for(int i = 0; i < _nodes; i++)
 	{
 		if((*this)(node,i) != 0)
 			res++;
@@ -209,8 +229,8 @@ int AdjMatrix::edges()
 	int edges = 0;
 	for(int i = 0; i < _totElem; i++)
 	{
-		edges =matrix[i] == 1;
+		edges += (_matrix[i] != 0);
 	}
 	
 	return edges;
-};
+}
