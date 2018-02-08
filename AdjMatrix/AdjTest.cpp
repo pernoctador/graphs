@@ -1,25 +1,27 @@
 #include "AdjMatrix.h"
 #include <assert.h>
 
+typedef int T;
+
 void testBasicGraph()
 {
-	AdjMatrix a(4);
-	AdjMatrix a_res(4);
+	AdjMatrix<T> a(4);
+	AdjMatrix<T> a_res(4);
 	a.nameElem();
 	if(digraph)
 	{
-		int e[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+		T e[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 		a_res = e;
 	}
 	else
 	{
-		int e[] = {0,1,2,3,4,5,6,7,8,9};
+		T e[] = {0,1,2,3,4,5,6,7,8,9};
 		a_res = e;
 	}
 
 	assert(a == a_res);
 
-	AdjMatrix b(6);
+	AdjMatrix<T> b(6);
 	b.completeGraph();
 
 	for(int i = 0; i < 6; i++)
@@ -33,7 +35,7 @@ void testBasicGraph()
 	else
 		assert(b.edges() == 15);
 
-	AdjMatrix c(a);
+	AdjMatrix<T> c(a);
 	assert(a == c);
 }
 

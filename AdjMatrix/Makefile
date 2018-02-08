@@ -14,8 +14,8 @@ CFLAGS = -g -ggdb -Wall -std=c++11
 
 all: tests
 
-tests: AdjMatrix.cpp AdjMatrix.h AdjTest.cpp
-	$(CC) $(CFLAGS) AdjMatrix.cpp AdjMatrix.h AdjTest.cpp -o tests
+tests: AdjMatrix.h AdjTest.cpp
+	$(CC) $(CFLAGS) AdjMatrix.h AdjTest.cpp -o tests
 
 clean:
 	#rm *.gch
